@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0c3c7d" />
+    <meta
+      name="description"
+      content="Generatore BeOx di attestati PDF personalizzati e pronti per la stampa."
+    />
+    <title>BeOx - Generatore attestati</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">BeOx · Body Mind Feeling</p>
+        <h1>Generatore attestati</h1>
+        <p class="header-copy">
+          Crea un unico PDF A4 con una pagina personalizzata per ogni partecipante.
+        </p>
+      </div>
+      <div class="privacy-badge" aria-label="Elaborazione privata nel browser">
+        <span class="privacy-dot"></span>
+        Tutto resta nel browser
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section class="panel form-panel" aria-labelledby="form-title">
+        <div class="panel-heading">
+          <span class="step-badge">1</span>
+          <div>
+            <h2 id="form-title">Compila i dati</h2>
+            <p>Incolla, controlla e genera.</p>
+          </div>
+        </div>
+
+        <form id="certificate-form" novalidate>
+          <div class="field-group">
+            <div class="label-row">
+              <label for="participants">Partecipanti</label>
+              <span id="participant-count" class="count-pill">0 nomi</span>
+            </div>
+            <textarea
+              id="participants"
+              rows="8"
+              placeholder="Mario Rossi&#10;Giulia Bianchi&#10;Luca Verdi"
+              spellcheck="false"
+              required
+            ></textarea>
+            <p class="field-help">
+              Copia una colonna da Excel e incollala qui. Funzionano anche nome e cognome in due colonne.
+            </p>
+          </div>
+
+          <div class="field-group">
+            <label for="event-date">Data attività</label>
+            <input id="event-date" type="date" required />
+          </div>
+
+          <div class="field-group">
+            <label for="company-logo">Logo azienda</label>
+            <label class="upload-box" for="company-logo">
+              <span class="upload-icon" aria-hidden="true">↑</span>
+              <span>
+                <strong id="upload-label">Scegli un logo PNG o JPEG</strong>
+                <small>Il logo verrà ridimensionato senza deformazioni · massimo 10 MB</small>
+              </span>
+            </label>
+            <input
+              id="company-logo"
+              class="visually-hidden"
+              type="file"
+              accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+              required
+            />
+          </div>
+
+          <fieldset>
+            <legend>Formatori</legend>
+            <div class="two-columns">
+              <div class="field-group compact">
+                <label for="trainer-one">Formatore 1</label>
+                <input id="trainer-one" type="text" placeholder="Nome Cognome" required />
+              </div>
+              <div class="field-group compact">
+                <label for="trainer-two">Formatore 2</label>
+                <input id="trainer-two" type="text" placeholder="Nome Cognome" required />
+              </div>
+            </div>
+          </fieldset>
+
+          <div class="field-group">
+            <label for="file-name">Nome del file</label>
+            <div class="file-name-row">
+              <input id="file-name" type="text" value="attestati-beox" />
+              <span>.pdf</span>
+            </div>
+          </div>
+
+          <div id="form-message" class="form-message" role="status" aria-live="polite"></div>
+
+          <button id="generate-button" class="primary-button" type="submit">
+            <span>Genera PDF</span>
+            <span id="button-count">0 pagine</span>
+          </button>
+        </form>
+      </section>
+
+      <section class="panel preview-panel" aria-labelledby="preview-title">
+        <div class="panel-heading preview-heading">
+          <span class="step-badge">2</span>
+          <div>
+            <h2 id="preview-title">Anteprima</h2>
+            <p>La prima pagina si aggiorna mentre compili.</p>
+          </div>
+        </div>
+
+        <div class="preview-stage">
+          <div id="certificate-preview" class="certificate-preview">
+            <img src="./assets/attestato-preview.jpg" alt="Modello attestato BeOx" />
+            <div id="preview-participant" class="preview-participant">NOME E COGNOME</div>
+
+            <div id="preview-left-block" class="preview-left-block">
+              <img id="preview-logo" alt="Logo azienda" hidden />
+              <div class="preview-date-line"></div>
+              <div id="preview-date" class="preview-date">DATA ATTIVITÀ</div>
+            </div>
+
+            <div id="preview-signatures-right" class="preview-signatures preview-signatures-right">
+              <div class="preview-signature">
+                <span class="signature-line"></span>
+                <span id="preview-trainer-one-right">FORMATORE 1</span>
+              </div>
+              <div class="preview-signature">
+                <span class="signature-line"></span>
+                <span id="preview-trainer-two-right">FORMATORE 2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="preview-notes">
+          <div>
+            <strong>Formato stampa</strong>
+            <span>A4 orizzontale</span>
+          </div>
+          <div>
+            <strong>Esportazione</strong>
+            <span>Un PDF, una pagina per nome</span>
+          </div>
+          <div>
+            <strong>Logo</strong>
+            <span>PNG, JPG o JPEG</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Il PDF viene creato direttamente sul tuo dispositivo: nomi, logo e dati non vengono caricati su server esterni.
+    </footer>
+
+    <script src="./assets/pdf-lib.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
