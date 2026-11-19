@@ -19,6 +19,8 @@
   const previewParticipant = document.querySelector("#preview-participant");
   const previewDate = document.querySelector("#preview-date");
   const previewLogo = document.querySelector("#preview-logo");
+  const previewTrainerOneSignature = document.querySelector("#preview-trainer-one-signature");
+  const previewTrainerTwoSignature = document.querySelector("#preview-trainer-two-signature");
   const previewTrainerOneRight = document.querySelector("#preview-trainer-one-right");
   const previewTrainerTwoRight = document.querySelector("#preview-trainer-two-right");
 
@@ -38,9 +40,17 @@
     "NOVEMBRE",
     "DICEMBRE",
   ];
+  const TRAINERS = Object.freeze({
+    "Nicole Crivelletto": "./assets/signatures/nicole-crivelletto.png",
+    "Elena Volpato": "./assets/signatures/elena-volpato.png",
+    "Federico Marcante": "./assets/signatures/federico-marcante.png",
+    "Luca Rigoldi": "./assets/signatures/luca-rigoldi.png",
+  });
 
   let logoState = null;
   let logoPreviewUrl = null;
+  let signaturePreviewRequest = 0;
+  const signatureCache = new Map();
 
   function parseParticipants(value) {
     return value
@@ -69,13 +79,145 @@
     previewParticipant.textContent = parseParticipants(participantsInput.value)[0]?.toUpperCase() || "NOME E COGNOME";
   }
 
+  function bytesFromBase64(value) {
+    const binary = atob(value);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+    return bytes;
+  }
+
+  async function normalizeSignature(bytes) {
+    const sourceBlob = new Blob([bytes], { type: "image/png" });
+    const bitmap = await createImageBitmap(sourceBlob);
+    const sourceCanvas = document.createElement("canvas");
+    sourceCanvas.width = bitmap.width;
+    sourceCanvas.height = bitmap.height;
+    const sourceContext = sourceCanvas.getContext("2d", { willReadFrequently: true });
+    sourceContext.drawImage(bitmap, 0, 0);
+    bitmap.close?.();
+
+    const imageData = sourceContext.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+    let minX = sourceCanvas.width;
+    let minY = sourceCanvas.height;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < sourceCanvas.height; y += 1) {
+      for (let x = 0; x < sourceCanvas.width; x += 1) {
+        const alpha = imageData.data[(y * sourceCanvas.width + x) * 4 + 3];
+        if (alpha > 24) {
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+    }
+
+    if (maxX < minX || maxY < minY) {
+      throw new Error("Una firma non contiene tratti visibili.");
+    }
+
+    const cropWidth = maxX - minX + 1;
+    const cropHeight = maxY - minY + 1;
+    const outputCanvas = document.createElement("canvas");
+    outputCanvas.width = 900;
+    outputCanvas.height = 270;
+    const outputContext = outputCanvas.getContext("2d");
+    const scale = Math.min(840 / cropWidth, 220 / cropHeight);
+    const drawWidth = cropWidth * scale;
+    const drawHeight = cropHeight * scale;
+    outputContext.drawImage(
+      sourceCanvas,
+      minX,
+      minY,
+      cropWidth,
+      cropHeight,
+      (outputCanvas.width - drawWidth) / 2,
+      (outputCanvas.height - drawHeight) / 2,
+      drawWidth,
+      drawHeight,
+    );
+
+    const normalizedBlob = await new Promise((resolve, reject) => {
+      outputCanvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Firma non elaborabile.")), "image/png");
+    });
+    return {
+      bytes: new Uint8Array(await normalizedBlob.arrayBuffer()),
+      previewUrl: URL.createObjectURL(normalizedBlob),
+    };
+  }
+
+  function loadSignature(name) {
+    if (!TRAINERS[name]) return Promise.reject(new Error("Formatore non valido."));
+    if (!signatureCache.has(name)) {
+      signatureCache.set(name, (async () => {
+        let bytes;
+        const offlineValue = window.__BEOX_SIGNATURE_BASE64?.[name];
+        if (offlineValue) {
+          bytes = bytesFromBase64(offlineValue);
+        } else {
+          const response = await fetch(TRAINERS[name]);
+          if (!response.ok) throw new Error(`Impossibile caricare la firma di ${name}.`);
+          bytes = new Uint8Array(await response.arrayBuffer());
+        }
+        return normalizeSignature(bytes);
+      })());
+    }
+    return signatureCache.get(name);
+  }
+
+  function syncTrainerOptions() {
+    for (const option of trainerOneInput.options) {
+      option.disabled = Boolean(option.value && option.value === trainerTwoInput.value);
+    }
+    for (const option of trainerTwoInput.options) {
+      option.disabled = Boolean(option.value && option.value === trainerOneInput.value);
+    }
+  }
+
+  async function updateSignaturePreviews() {
+    const request = ++signaturePreviewRequest;
+    const selections = [
+      [trainerOneInput.value, previewTrainerOneSignature],
+      [trainerTwoInput.value, previewTrainerTwoSignature],
+    ];
+
+    await Promise.all(selections.map(async ([name, image]) => {
+      if (!name) {
+        image.hidden = true;
+        image.removeAttribute("src");
+        image.alt = "";
+        return;
+      }
+      image.hidden = true;
+      image.alt = "";
+      try {
+        const asset = await loadSignature(name);
+        if (request !== signaturePreviewRequest) return;
+        image.src = asset.previewUrl;
+        image.alt = `Firma di ${name}`;
+        image.hidden = false;
+      } catch (error) {
+        if (request === signaturePreviewRequest) {
+          image.hidden = true;
+          setMessage(error?.message || "Impossibile caricare una firma.", "error");
+        }
+      }
+    }));
+  }
+
   function updatePreview() {
     previewDate.textContent = formatDate(dateInput.value);
-    const trainerOne = trainerOneInput.value.trim().toUpperCase() || "FORMATORE 1";
-    const trainerTwo = trainerTwoInput.value.trim().toUpperCase() || "FORMATORE 2";
+    const trainerOne = trainerOneInput.value.toUpperCase() || "FORMATORE 1";
+    const trainerTwo = trainerTwoInput.value.toUpperCase() || "FORMATORE 2";
 
     previewTrainerOneRight.textContent = trainerOne;
     previewTrainerTwoRight.textContent = trainerTwo;
+    syncTrainerOptions();
+    void updateSignaturePreviews();
 
     try {
       localStorage.setItem(
@@ -97,8 +239,8 @@
       const saved = JSON.parse(localStorage.getItem("beox-attestati-settings") || "null");
       if (!saved) return;
       dateInput.value = saved.date || "";
-      trainerOneInput.value = saved.trainerOne || "";
-      trainerTwoInput.value = saved.trainerTwo || "";
+      trainerOneInput.value = TRAINERS[saved.trainerOne] ? saved.trainerOne : "";
+      trainerTwoInput.value = TRAINERS[saved.trainerTwo] ? saved.trainerTwo : "";
       fileNameInput.value = saved.fileName || "attestati-beox";
     } catch (_) {
       // Dati locali non validi: si parte con il modulo vuoto.
@@ -205,10 +347,17 @@
     const embeddedLogo = logoState.type === "png"
       ? await outputPdf.embedPng(logoState.bytes)
       : await outputPdf.embedJpg(logoState.bytes);
+    const signatureAssets = await Promise.all([
+      loadSignature(trainerOneInput.value),
+      loadSignature(trainerTwoInput.value),
+    ]);
+    const embeddedSignatures = await Promise.all(
+      signatureAssets.map((asset) => outputPdf.embedPng(asset.bytes)),
+    );
 
     const formattedDate = formatDate(dateInput.value);
-    const trainerOne = trainerOneInput.value.trim().toUpperCase();
-    const trainerTwo = trainerTwoInput.value.trim().toUpperCase();
+    const trainerOne = trainerOneInput.value.toUpperCase();
+    const trainerTwo = trainerTwoInput.value.toUpperCase();
 
     outputPdf.setTitle("Attestati BeOx");
     outputPdf.setAuthor("BeOx");
@@ -259,6 +408,19 @@
       const firstX = 515;
       const secondX = 645;
       const lineWidth = 115;
+
+      page.drawImage(embeddedSignatures[0], {
+        x: firstX + 3.5,
+        y: signatureY + 3,
+        width: 108,
+        height: 32.4,
+      });
+      page.drawImage(embeddedSignatures[1], {
+        x: secondX + 3.5,
+        y: signatureY + 3,
+        width: 108,
+        height: 32.4,
+      });
 
       drawLine(page, firstX, signatureY, firstX + lineWidth);
       drawLine(page, secondX, signatureY, secondX + lineWidth);
@@ -331,9 +493,14 @@
       logoInput.focus();
       return;
     }
-    if (!trainerOneInput.value.trim() || !trainerTwoInput.value.trim()) {
-      setMessage("Inserisci il nome di entrambi i formatori.", "error");
-      (!trainerOneInput.value.trim() ? trainerOneInput : trainerTwoInput).focus();
+    if (!trainerOneInput.value || !trainerTwoInput.value) {
+      setMessage("Seleziona entrambi i formatori.", "error");
+      (!trainerOneInput.value ? trainerOneInput : trainerTwoInput).focus();
+      return;
+    }
+    if (trainerOneInput.value === trainerTwoInput.value) {
+      setMessage("Seleziona due formatori diversi.", "error");
+      trainerTwoInput.focus();
       return;
     }
 
@@ -360,8 +527,8 @@
 
   participantsInput.addEventListener("input", updateCount);
   dateInput.addEventListener("input", updatePreview);
-  trainerOneInput.addEventListener("input", updatePreview);
-  trainerTwoInput.addEventListener("input", updatePreview);
+  trainerOneInput.addEventListener("change", updatePreview);
+  trainerTwoInput.addEventListener("change", updatePreview);
   fileNameInput.addEventListener("input", updatePreview);
   logoInput.addEventListener("change", handleLogoSelection);
   form.addEventListener("submit", handleSubmit);

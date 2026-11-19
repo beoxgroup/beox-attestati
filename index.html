@@ -82,11 +82,23 @@
             <div class="two-columns">
               <div class="field-group compact">
                 <label for="trainer-one">Formatore 1</label>
-                <input id="trainer-one" type="text" placeholder="Nome Cognome" required />
+                <select id="trainer-one" required>
+                  <option value="">Seleziona il primo formatore</option>
+                  <option value="Nicole Crivelletto">Nicole Crivelletto</option>
+                  <option value="Elena Volpato">Elena Volpato</option>
+                  <option value="Federico Marcante">Federico Marcante</option>
+                  <option value="Luca Rigoldi">Luca Rigoldi</option>
+                </select>
               </div>
               <div class="field-group compact">
                 <label for="trainer-two">Formatore 2</label>
-                <input id="trainer-two" type="text" placeholder="Nome Cognome" required />
+                <select id="trainer-two" required>
+                  <option value="">Seleziona il secondo formatore</option>
+                  <option value="Nicole Crivelletto">Nicole Crivelletto</option>
+                  <option value="Elena Volpato">Elena Volpato</option>
+                  <option value="Federico Marcante">Federico Marcante</option>
+                  <option value="Luca Rigoldi">Luca Rigoldi</option>
+                </select>
               </div>
             </div>
           </fieldset>
@@ -130,10 +142,12 @@
 
             <div id="preview-signatures-right" class="preview-signatures preview-signatures-right">
               <div class="preview-signature">
+                <img id="preview-trainer-one-signature" class="preview-signature-image" alt="" hidden />
                 <span class="signature-line"></span>
                 <span id="preview-trainer-one-right">FORMATORE 1</span>
               </div>
               <div class="preview-signature">
+                <img id="preview-trainer-two-signature" class="preview-signature-image" alt="" hidden />
                 <span class="signature-line"></span>
                 <span id="preview-trainer-two-right">FORMATORE 2</span>
               </div>

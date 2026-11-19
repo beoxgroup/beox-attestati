@@ -472,10 +472,19 @@ legend {
 .preview-signature {
   min-width: 0;
   color: #545454;
-  font-size: clamp(5px, 0.77vw, 10px);
+  font-size: clamp(4.5px, 0.68vw, 9px);
   font-weight: 800;
   letter-spacing: 0.01em;
   text-transform: uppercase;
+}
+
+.preview-signature-image {
+  display: block;
+  width: 100%;
+  height: clamp(19px, 3.7vw, 42px);
+  margin: 0 auto 2px;
+  object-fit: contain;
+  object-position: center bottom;
 }
 
 .preview-signature span:last-child {
@@ -488,14 +497,14 @@ legend {
 .signature-line {
   display: block;
   height: 1px;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   background: var(--blue);
 }
 
 .preview-signatures-right {
   left: auto;
   right: 10.5%;
-  top: 82.8%;
+  top: 74.8%;
   bottom: auto;
   width: 28.5%;
 }

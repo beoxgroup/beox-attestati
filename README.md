@@ -1,6 +1,6 @@
 # BeOx - Generatore attestati
 
-Web app statica che crea un unico PDF A4 orizzontale con una pagina per partecipante.
+Web app statica che crea un unico PDF A4 orizzontale con una pagina per partecipante. I formatori si selezionano da un elenco e le loro firme vengono inserite automaticamente sopra le linee del certificato.
 
 ## Uso locale
 
